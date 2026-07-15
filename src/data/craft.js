@@ -8,12 +8,14 @@
 // 真实图片来源：Wikimedia Commons · 江西客家非遗木刻面具展览（CC0 公共领域）
 // 视频来源：B站、头条、共产党员网、中国傩戏网等公开平台，跳转观看并标注出处
 
-import craftMask01 from '../assets/nuo-photos/craft-mask-01.jpg'
-import craftMask02 from '../assets/nuo-photos/craft-mask-02.jpg'
-import craftMask03 from '../assets/nuo-photos/craft-mask-03.jpg'
-import craftMask05 from '../assets/nuo-photos/craft-mask-05.jpg'
-import craftMask07 from '../assets/nuo-photos/craft-mask-07.jpg'
-import craftMask12 from '../assets/nuo-photos/craft-mask-12.jpg'
+import craftStep01 from '../assets/nuo-photos/craft-step-01.jpg'
+import craftStep02 from '../assets/nuo-photos/craft-step-02.jpg'
+import craftStep03 from '../assets/nuo-photos/craft-step-03.jpg'
+import craftStep04 from '../assets/nuo-photos/craft-step-04.jpg'
+import craftStep05 from '../assets/nuo-photos/craft-step-05.jpg'
+import craftStep06 from '../assets/nuo-photos/craft-step-06.jpg'
+import craftStep07 from '../assets/nuo-photos/craft-step-07.jpg'
+import craftStep08 from '../assets/nuo-photos/craft-step-08.jpg'
 
 export const craftSteps = [
   {
@@ -30,8 +32,8 @@ export const craftSteps = [
     taboos: '不取枯木、雷击木；采伐须择吉日，先焚香祈福',
     color: '#8a6850',
     accent: '#8a6850',
-    img: craftMask05,
-    imgCaption: '木刻面具坯体 · 江西客家非遗木刻面具',
+    img: craftStep01,
+    imgCaption: '选材养木 · 丁木白杨为佳 · 阴干一年以上',
     media: [
       { platform: '头条', type: 'video', title: '恩施79岁传承人精雕傩面具（选材起手）', url: 'https://m.toutiao.com/group/7569499801395184143/' },
       { platform: '中国傩戏网', type: 'article', title: '傩面具制作十道工序 · 选材', url: 'https://www.zgnuoxi.com/mianju/view_369.html' }
@@ -51,8 +53,8 @@ export const craftSteps = [
     taboos: '须依师传图谱，不可自创新样；画稿时心怀敬意',
     color: '#3a3a42',
     accent: '#a39e92',
-    img: craftMask07,
-    imgCaption: '依谱起样 · 武将面具起稿参照',
+    img: craftStep02,
+    imgCaption: '依谱起样 · 墨线勾勒五官比例 · 五色相谱式',
     media: [
       { platform: '共产党员网', type: 'video', title: '萍乡傩面具制作技艺微视频 · 起稿', url: 'http://dygbjy.12371.cn/2022/07/11/VIDE1657503305170740.shtml' },
       { platform: '中国傩戏网', type: 'article', title: '傩面具制作十道工序 · 画稿', url: 'https://www.zgnuoxi.com/mianju/view_369.html' }
@@ -72,8 +74,8 @@ export const craftSteps = [
     taboos: '不可在"四离四绝"日开工；须顺木纹下刀',
     color: '#5a4a3a',
     accent: '#5a4a3a',
-    img: craftMask05,
-    imgCaption: '粗胚成型 · 顺应木纹出坯',
+    img: craftStep03,
+    imgCaption: '截料出坯 · 斧凿去余木 · 顺应木纹成型',
     media: [
       { platform: 'B站', type: 'video', title: '傩面雕刻全流程 · 开坯起手', url: 'https://www.bilibili.com/video/BV1Pu411u74k/' },
       { platform: '头条', type: 'video', title: '恩施79岁传承人 · 出坯工序', url: 'https://m.toutiao.com/group/7569499801395184143/' }
@@ -93,8 +95,8 @@ export const craftSteps = [
     taboos: '须顺木纹下刀；刻五官时心怀敬意，"以刀代笔、以心传神"',
     color: '#c0322a',
     accent: '#c0322a',
-    img: craftMask03,
-    imgCaption: '深浮雕镂空雕 · 兽面纹剔地起凸',
+    img: craftStep04,
+    imgCaption: '深浮雕镂空雕 · 剔地起凸 · 刀法如笔',
     media: [
       { platform: 'B站', type: 'video', title: '傩面唐氏太婆面具雕刻全纪录', url: 'https://www.bilibili.com/video/BV1Pu411u74k/' },
       { platform: '头条', type: 'video', title: '恩施79岁传承人精雕傩面具', url: 'https://m.toutiao.com/group/7569499801395184143/' }
@@ -114,8 +116,8 @@ export const craftSteps = [
     taboos: '五官凹陷处不可磨平；须顺木纹方向打磨',
     color: '#c9a24b',
     accent: '#c9a24b',
-    img: craftMask07,
-    imgCaption: '温润如玉 · 打磨抛光后的武将面具',
+    img: craftStep05,
+    imgCaption: '修光砂光 · 粗砂到细砂逐级打磨 · 温润如玉',
     media: [
       { platform: '共产党员网', type: 'video', title: '萍乡傩面具制作技艺 · 修光砂光', url: 'http://dygbjy.12371.cn/2022/07/11/VIDE1657503305170740.shtml' },
       { platform: 'B站', type: 'video', title: '傩面雕刻 · 打磨工序', url: 'https://www.bilibili.com/video/BV1Pu411u74k/' }
@@ -135,8 +137,8 @@ export const craftSteps = [
     taboos: '忌用现代化学漆，以保"百年不褪色"；须按天气调整胶水浓度',
     color: '#7d1f1a',
     accent: '#7d3c98',
-    img: craftMask01,
-    imgCaption: '矿物敷彩 · 五色相彩绘女将面具',
+    img: craftStep06,
+    imgCaption: '矿物敷彩 · 朱砂石青雄黄 · 层层薄涂百年不褪',
     media: [
       { platform: 'B站', type: 'video', title: 'NUO傩戏与手碟 · 彩绘呈现', url: 'https://www.bilibili.com/video/BV1zm4y1W7wW/' },
       { platform: '网易·贵州省博物馆', type: 'article', title: '贵州傩面具彩绘工艺图解', url: 'http://3g.163.com/dy/article/D932PG5Q0514SQM1.html' }
@@ -156,8 +158,8 @@ export const craftSteps = [
     taboos: '朱砂点睛后即"有灵"，未开光者不可佩戴登台；不可随意触碰眼部',
     color: '#c0322a',
     accent: '#c0322a',
-    img: craftMask12,
-    imgCaption: '朱砂点睛 · 开眼见神 · 额间第三目',
+    img: craftStep07,
+    imgCaption: '朱砂点睛 · 开眼见神 · 赋予灵性',
     media: [
       { platform: '中国傩戏网', type: 'article', title: '傩面具制作十道工序 · 点睛安腹脏', url: 'https://www.zgnuoxi.com/mianju/view_369.html' },
       { platform: 'B站', type: 'video', title: '傩面雕刻 · 点睛赋灵', url: 'https://www.bilibili.com/video/BV1Pu411u74k/' }
@@ -177,8 +179,8 @@ export const craftSteps = [
     taboos: '须择吉日吉时；妇人、外人回避；未开光之面具不可登台演傩',
     color: '#e8a82e',
     accent: '#e8a82e',
-    img: craftMask02,
-    imgCaption: '开光成神 · 神灵载体 · 供奉登台',
+    img: craftStep08,
+    imgCaption: '开光请神 · 鸡血涂额朱砂点八光 · 成神登台',
     media: [
       { platform: '网易·贵州省博物馆', type: 'article', title: '贵州傩面具开光仪式图解', url: 'http://3g.163.com/dy/article/D932PG5Q0514SQM1.html' },
       { platform: '中国傩戏网', type: 'article', title: '傩面具制作十道工序 · 开光请神', url: 'https://www.zgnuoxi.com/mianju/view_369.html' }
