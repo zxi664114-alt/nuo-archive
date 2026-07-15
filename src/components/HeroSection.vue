@@ -12,12 +12,12 @@ let bellTimer = null
 let chantTimer = null
 let activeNodes = []
 
-// 傩戏氛围音 —— 多层 WebAudio 合成
-// 第1层：低频 Drone（仪式空间嗡鸣，三个低频振荡器+LFO呼吸感）
-// 第2层：白噪音+低通滤波（远处风声/篝火噼啪）
-// 第3层：傩鼓节奏（远处深沉鼓声，随机间隔触发）
-// 第4层：法器铃声（金属泛音，模拟铃铛/铙钹）
-// 第5层：低吟人声（滤波后的嗡鸣，模拟远处吟唱）
+// 傩戏氛围音 —— 五层 WebAudio 合成（仪式级沉浸）
+// 第1层：低频 Drone 嗡鸣（三音叠加+LFO呼吸+滤波共振，营造仪式空间感）
+// 第2层：风声/篝火氛围（粉红噪音+带通+随机调制，远处山林夜声）
+// 第3层：傩鼓节奏（深层皮鼓质感，频率下扫+共振腔体+随机间隔）
+// 第4层：法器金属泛音（铜铃/铙钹，非谐泛音列+金属共振）
+// 第5层：低吟人声（多共振峰滤波，模拟远处傩腔吟唱）
 function toggleAudio() {
   if (audioOn.value) {
     stopAudio()
@@ -28,186 +28,287 @@ function toggleAudio() {
   masterGain.gain.value = 0.0
   masterGain.connect(audioCtx.destination)
 
-  // === 第1层：低频 Drone ===
-  const drone1 = createDrone(55, 0.045)     // A1 - 基础低频
-  const drone2 = createDrone(82.4, 0.03)    // E2 - 五度协和
-  const drone3 = createDrone(110, 0.02)     // A2 - 八度叠加
+  // 全局混响（卷积替代：简易多次延迟反馈）
+  const reverbGain = audioCtx.createGain()
+  reverbGain.gain.value = 0.35
+  const reverbDelay = audioCtx.createDelay(1.0)
+  reverbDelay.delayTime.value = 0.18
+  const reverbFeedback = audioCtx.createGain()
+  reverbFeedback.gain.value = 0.4
+  const reverbFilter = audioCtx.createBiquadFilter()
+  reverbFilter.type = 'lowpass'
+  reverbFilter.frequency.value = 1200
+  reverbDelay.connect(reverbFilter)
+  reverbFilter.connect(reverbFeedback)
+  reverbFeedback.connect(reverbDelay)
+  reverbDelay.connect(reverbGain)
+  reverbGain.connect(masterGain)
+
+  // === 第1层：低频 Drone 嗡鸣 ===
+  // 基频 D1(36.7Hz)+A1(55Hz)+D2(73.4Hz)，深沉的仪式空间嗡鸣
+  const drone1 = createDrone(36.7, 0.06, 0.06)
+  const drone2 = createDrone(55, 0.05, 0.08)
+  const drone3 = createDrone(73.4, 0.035, 0.05)
   droneNodes.push(drone1, drone2, drone3)
 
-  // === 第2层：白噪音 + 低通滤波 ===
+  // === 第2层：风声/篝火氛围（粉红噪音） ===
   const bufferSize = audioCtx.sampleRate * 4
   const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate)
   const data = buffer.getChannelData(0)
-  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1
+  let lastOut = 0
+  for (let i = 0; i < bufferSize; i++) {
+    const white = Math.random() * 2 - 1
+    // 粉红噪音算法（Voss-McCartney 简化版）
+    data[i] = (lastOut + 0.02 * white) / 1.02
+    lastOut = data[i]
+    data[i] *= 3.5
+  }
   noiseNode = audioCtx.createBufferSource()
   noiseNode.buffer = buffer
   noiseNode.loop = true
 
   const noiseFilter = audioCtx.createBiquadFilter()
-  noiseFilter.type = 'lowpass'
-  noiseFilter.frequency.value = 380
-  noiseFilter.Q.value = 0.5
+  noiseFilter.type = 'bandpass'
+  noiseFilter.frequency.value = 280
+  noiseFilter.Q.value = 0.4
+
+  // 随机调制风声的频率，模拟自然风的变化
+  const windLFO = audioCtx.createOscillator()
+  windLFO.frequency.value = 0.15
+  const windLFOGain = audioCtx.createGain()
+  windLFOGain.gain.value = 120
+  windLFO.connect(windLFOGain)
+  windLFOGain.connect(noiseFilter.frequency)
 
   const noiseGain = audioCtx.createGain()
-  noiseGain.gain.value = 0.055
+  noiseGain.gain.value = 0.07
 
   noiseNode.connect(noiseFilter)
   noiseFilter.connect(noiseGain)
   noiseGain.connect(masterGain)
+  noiseGain.connect(reverbDelay)
   noiseNode.start()
-  activeNodes.push(noiseNode)
+  windLFO.start()
+  activeNodes.push(noiseNode, windLFO)
 
   // === 第3层：傩鼓节奏 ===
   scheduleDrum()
 
-  // === 第4层：法器铃声 ===
+  // === 第4层：法器金属泛音 ===
   scheduleBell()
 
   // === 第5层：低吟人声 ===
   scheduleChant()
 
   // 渐入
-  masterGain.gain.linearRampToValueAtTime(0.55, audioCtx.currentTime + 2.5)
+  masterGain.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 3)
   audioOn.value = true
 
   // --- 辅助函数 ---
-  function createDrone(freq, gain) {
+  function createDrone(freq, gain, lfoRate) {
     const osc = audioCtx.createOscillator()
     osc.type = 'sine'
     osc.frequency.value = freq
 
+    // 叠加微弱的五度泛音，增加厚度
+    const osc2 = audioCtx.createOscillator()
+    osc2.type = 'triangle'
+    osc2.frequency.value = freq * 1.5
+    const osc2Gain = audioCtx.createGain()
+    osc2Gain.gain.value = 0.015
+
     // LFO 频率调制，营造呼吸感
     const lfo = audioCtx.createOscillator()
-    lfo.frequency.value = 0.08 + Math.random() * 0.12
+    lfo.frequency.value = lfoRate + Math.random() * 0.05
     const lfoGain = audioCtx.createGain()
-    lfoGain.gain.value = 0.6
+    lfoGain.gain.value = freq * 0.015
     lfo.connect(lfoGain)
     lfoGain.connect(osc.frequency)
 
+    // 低通滤波，去掉尖锐高频
     const filter = audioCtx.createBiquadFilter()
     filter.type = 'lowpass'
-    filter.frequency.value = 220
+    filter.frequency.value = 300
+    filter.Q.value = 1.5
 
     const g = audioCtx.createGain()
     g.gain.value = gain
 
     osc.connect(filter)
+    osc2.connect(osc2Gain)
+    osc2Gain.connect(filter)
     filter.connect(g)
     g.connect(masterGain)
+    g.connect(reverbDelay)
     osc.start()
+    osc2.start()
     lfo.start()
-    activeNodes.push(osc, lfo)
-    return { osc, lfo, gain: g }
+    activeNodes.push(osc, osc2, lfo)
+    return { osc, osc2, lfo, gain: g }
   }
 
   function scheduleDrum() {
     if (!audioCtx || !audioOn.value) return
     playDrum()
-    const nextDelay = 2800 + Math.random() * 2200
-    drumTimer = setTimeout(scheduleDrum, nextDelay)
+    // 傩鼓节奏：基本间隔 2.5-4.5秒，偶尔双击
+    const nextDelay = 2500 + Math.random() * 2000
+    drumTimer = setTimeout(() => {
+      if (Math.random() < 0.25) {
+        // 25%概率双击
+        playDrum()
+        drumTimer = setTimeout(scheduleDrum, 600 + Math.random() * 400)
+      } else {
+        scheduleDrum()
+      }
+    }, nextDelay)
   }
 
   function playDrum() {
     if (!audioCtx) return
     const now = audioCtx.currentTime
-    // 主鼓声：低频正弦波 + 快速衰减
+    // 主鼓声：低频下扫，模拟牛皮鼓的深沉共振
     const osc = audioCtx.createOscillator()
     osc.type = 'sine'
-    osc.frequency.setValueAtTime(90, now)
-    osc.frequency.exponentialRampToValueAtTime(38, now + 0.4)
+    osc.frequency.setValueAtTime(120, now)
+    osc.frequency.exponentialRampToValueAtTime(35, now + 0.35)
+
+    // 鼓皮振动：三角波低频
+    const osc2 = audioCtx.createOscillator()
+    osc2.type = 'triangle'
+    osc2.frequency.setValueAtTime(65, now)
+    osc2.frequency.exponentialRampToValueAtTime(28, now + 0.25)
+
+    // 鼓体共振：高通噪音脉冲，模拟击鼓瞬间的"噗"声
+    const clickBuf = audioCtx.createBuffer(1, 400, audioCtx.sampleRate)
+    const clickData = clickBuf.getChannelData(0)
+    for (let i = 0; i < 400; i++) clickData[i] = (Math.random() * 2 - 1) * (1 - i / 400)
+    const click = audioCtx.createBufferSource()
+    click.buffer = clickBuf
+    const clickFilter = audioCtx.createBiquadFilter()
+    clickFilter.type = 'highpass'
+    clickFilter.frequency.value = 200
+    const clickGain = audioCtx.createGain()
+    clickGain.gain.value = 0.06
 
     const g = audioCtx.createGain()
     g.gain.setValueAtTime(0, now)
-    g.gain.linearRampToValueAtTime(0.22, now + 0.02)
-    g.gain.exponentialRampToValueAtTime(0.001, now + 0.65)
-
-    osc.connect(g)
-    g.connect(masterGain)
-    osc.start(now)
-    osc.stop(now + 0.75)
-
-    // 叠加三角波低频噗声
-    const osc2 = audioCtx.createOscillator()
-    osc2.type = 'triangle'
-    osc2.frequency.setValueAtTime(52, now)
-    osc2.frequency.exponentialRampToValueAtTime(30, now + 0.3)
+    g.gain.linearRampToValueAtTime(0.28, now + 0.015)
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.7)
 
     const g2 = audioCtx.createGain()
     g2.gain.setValueAtTime(0, now)
-    g2.gain.linearRampToValueAtTime(0.10, now + 0.015)
-    g2.gain.exponentialRampToValueAtTime(0.001, now + 0.45)
+    g2.gain.linearRampToValueAtTime(0.12, now + 0.01)
+    g2.gain.exponentialRampToValueAtTime(0.001, now + 0.5)
 
+    osc.connect(g)
+    g.connect(masterGain)
+    g.connect(reverbDelay)
     osc2.connect(g2)
     g2.connect(masterGain)
+    g2.connect(reverbDelay)
+    click.connect(clickFilter)
+    clickFilter.connect(clickGain)
+    clickGain.connect(masterGain)
+    osc.start(now)
     osc2.start(now)
-    osc2.stop(now + 0.55)
+    click.start(now)
+    osc.stop(now + 0.8)
+    osc2.stop(now + 0.6)
   }
 
   function scheduleBell() {
     if (!audioCtx || !audioOn.value) return
     playBell()
-    const nextDelay = 7000 + Math.random() * 5000
+    const nextDelay = 6000 + Math.random() * 6000
     bellTimer = setTimeout(scheduleBell, nextDelay)
   }
 
   function playBell() {
     if (!audioCtx) return
     const now = audioCtx.currentTime
-    // 法器铃声：多个泛音组合
-    const freqs = [880, 1320, 1760, 2640]
-    freqs.forEach((freq, i) => {
+    // 法器铃声：非谐泛音列，模拟铜铃/铙钹的金属质感
+    // 基频 + 非整数倍泛音（金属共振特征）
+    const partials = [
+      { freq: 523, vol: 0.014, decay: 3.0 },   // C5 基频
+      { freq: 784, vol: 0.010, decay: 2.5 },   // G5 1.5x
+      { freq: 1108, vol: 0.008, decay: 2.2 },  // 非谐泛音 2.12x
+      { freq: 1487, vol: 0.006, decay: 1.8 },  // 非谐泛音 2.84x
+      { freq: 2203, vol: 0.004, decay: 1.5 }   // 非谐泛音 4.21x
+    ]
+    partials.forEach(p => {
       const osc = audioCtx.createOscillator()
       osc.type = 'sine'
-      osc.frequency.value = freq
+      osc.frequency.value = p.freq
+
+      // 轻微频率调制，增加金属颤动感
+      const trem = audioCtx.createOscillator()
+      trem.frequency.value = 4.5 + Math.random() * 2
+      const tremGain = audioCtx.createGain()
+      tremGain.gain.value = p.freq * 0.003
+      trem.connect(tremGain)
+      tremGain.connect(osc.frequency)
 
       const g = audioCtx.createGain()
-      const vol = 0.012 / (i + 1)
       g.gain.setValueAtTime(0, now)
-      g.gain.linearRampToValueAtTime(vol, now + 0.008)
-      g.gain.exponentialRampToValueAtTime(0.0001, now + 2.8 + i * 0.4)
+      g.gain.linearRampToValueAtTime(p.vol, now + 0.005)
+      g.gain.exponentialRampToValueAtTime(0.0001, now + p.decay)
 
       osc.connect(g)
       g.connect(masterGain)
+      g.connect(reverbDelay)
       osc.start(now)
-      osc.stop(now + 3.5)
+      trem.start(now)
+      osc.stop(now + p.decay + 0.5)
+      trem.stop(now + p.decay + 0.5)
     })
   }
 
   function scheduleChant() {
     if (!audioCtx || !audioOn.value) return
     playChant()
-    const nextDelay = 10000 + Math.random() * 8000
+    const nextDelay = 8000 + Math.random() * 6000
     chantTimer = setTimeout(scheduleChant, nextDelay)
   }
 
   function playChant() {
     if (!audioCtx) return
     const now = audioCtx.currentTime
-    // 低吟人声：锯齿波 + 带通滤波，模拟远处吟唱
-    const baseFreqs = [110, 138.6, 164.8]  // A2, C#3, E3 - 小三和弦
-    baseFreqs.forEach((freq, i) => {
+    // 低吟人声：锯齿波 + 多共振峰带通滤波，模拟傩腔吟唱
+    // 音符：D2(73.4Hz) → F2(87.3Hz) → A2(110Hz)，傩戏五声音阶感
+    const notes = [73.4, 87.3, 110]
+    notes.forEach((freq, i) => {
       const osc = audioCtx.createOscillator()
       osc.type = 'sawtooth'
       osc.frequency.value = freq
 
-      // 带通滤波，模拟人声共振峰
-      const filter = audioCtx.createBiquadFilter()
-      filter.type = 'bandpass'
-      filter.frequency.value = 400 + i * 100
-      filter.Q.value = 2.5
+      // 第一共振峰（口腔）
+      const formant1 = audioCtx.createBiquadFilter()
+      formant1.type = 'bandpass'
+      formant1.frequency.value = 350 + i * 80
+      formant1.Q.value = 3
+
+      // 第二共振峰（鼻腔）
+      const formant2 = audioCtx.createBiquadFilter()
+      formant2.type = 'bandpass'
+      formant2.frequency.value = 900 + i * 150
+      formant2.Q.value = 4
 
       const g = audioCtx.createGain()
-      const vol = 0.008
+      const vol = 0.012
+      // 缓入缓出，模拟人声气息
       g.gain.setValueAtTime(0, now)
-      g.gain.linearRampToValueAtTime(vol, now + 1.5)
-      g.gain.linearRampToValueAtTime(vol * 0.8, now + 3)
-      g.gain.exponentialRampToValueAtTime(0.0001, now + 5)
+      g.gain.linearRampToValueAtTime(vol, now + 2)
+      g.gain.linearRampToValueAtTime(vol * 0.7, now + 4)
+      g.gain.linearRampToValueAtTime(vol * 0.5, now + 6)
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 8)
 
-      osc.connect(filter)
-      filter.connect(g)
+      osc.connect(formant1)
+      formant1.connect(formant2)
+      formant2.connect(g)
       g.connect(masterGain)
+      g.connect(reverbDelay)
       osc.start(now)
-      osc.stop(now + 5.5)
+      osc.stop(now + 8.5)
     })
   }
 }
@@ -220,6 +321,7 @@ function stopAudio() {
         activeNodes.forEach(n => { try { n.stop() } catch(e){} })
         droneNodes.forEach(d => {
           try { d.osc.stop() } catch(e){}
+          try { d.osc2.stop() } catch(e){}
           try { d.lfo.stop() } catch(e){}
         })
         noiseNode && noiseNode.stop()
