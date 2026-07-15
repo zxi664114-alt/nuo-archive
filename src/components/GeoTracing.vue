@@ -24,15 +24,19 @@ function closeModal() { modalShow.value = false }
 
 // 渲染中国暗色系交互地图
 async function renderMap() {
-  const url = 'https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json'
-  try {
-    const res = await fetch(url)
-    const geoJson = await res.json()
-    echarts.registerMap('china', geoJson)
-    mapReady.value = true
-  } catch (e) {
-    console.warn('中国地图 GeoJSON 拉取失败，使用兜底坐标网格', e)
-    mapReady.value = false
+  // 优先加载本地 GeoJSON，避免 Vercel 等国外部署环境无法访问阿里云 API
+  const urls = ['/china.json', 'https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json']
+  for (const url of urls) {
+    try {
+      const res = await fetch(url)
+      if (!res.ok) continue
+      const geoJson = await res.json()
+      echarts.registerMap('china', geoJson)
+      mapReady.value = true
+      break
+    } catch (e) {
+      console.warn('GeoJSON 加载失败 (' + url + '):', e)
+    }
   }
   buildChart()
 }
